@@ -1,0 +1,83 @@
+<html>
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="./bower_components/d3/d3.min.js"></script>
+</head>
+<body>
+    <h3>GeoJSON input</h3>
+    <textarea id="geojson" rows="10"></textarea>
+    <h3>to<br />CSV</h3>
+    <textarea id="csv" rows="10"></textarea>
+    <script>
+        Array.prototype.unique = function() {
+            var a = this.concat();
+            for(var i=0; i<a.length; ++i) {
+                for(var j=i+1; j<a.length; ++j) {
+                    if(a[i] === a[j])
+                        a.splice(j--, 1);
+                }
+            }
+
+            return a;
+        };
+        function convertToGeoCsv(obj){
+            console.log(obj);
+            var line = '';
+            var arr = [];
+            var keys = [];
+            for (var i = 0; i < obj.length; i++) {
+                var t = {};
+                var o = obj[i];
+                Object.keys(o).forEach(function (key) {
+                    if(key === 'geometry'){
+                        t['geometry_type'] = o[key]['type'];
+                        if(o[key]['type'] === 'Point'){
+                            t['longitude'] = o[key]['coordinates'][0];
+                            t['latitude'] = o[key]['coordinates'][1];
+                        }else{
+                            t['geometry'] = arrayToString(o[key]['coordinates']);
+                        }
+                    }else if(Array.isArray(o[key])){
+                        t[key] = arrayToString(o[key]);
+                    }else{
+                        t[key] = o[key];
+                    }
+                });
+                keys = keys.concat(Object.keys(t));
+                arr.push(t);
+            }
+            line += ""+keys.unique().join()+"\r\n";
+            console.log(arr);
+            console.log(line);
+            for (var j = 0;  j < arr.length; j++){
+                console.log(arr[j]);
+                for (i = 0; i < keys.length; i++) {
+                    var key = keys[i];
+                    if(key in arr[j]){
+                        console.log('gt '+key);
+                        if(typeof arr[j] === 'string')
+                            line += "\""+arr[j][key]+"\"";
+                        else
+                            line += arr[j][key];
+                    }else
+                        console.log('no '+key);
+                    if(i != keys.length-1)
+                        line += ",";
+                }
+                line += "\r\n";
+            }
+            return line;
+        }
+        function arrayToString(arr){
+            return ""+arr.join();
+        }
+        d3.json("geo.json", function(json) {
+            console.log(json);
+            var features = json.features;
+            document.getElementById('csv').value = convertToGeoCsv(features);
+        });
+    </script>
+</body>
+</html>
